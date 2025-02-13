@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fabians Geburtstagsspiel</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #87CEEB;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #gameArea {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            background-color: #87CEEB;
+            overflow: hidden;
+            border: 2px solid #000;
+        }
+
+        .sonic {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: #0080FF;
+            border-radius: 50%;
+            top: 300px;
+            left: 50px;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Sonic_the_Hedgehog_Logo.svg/1024px-Sonic_the_Hedgehog_Logo.svg.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .gift {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: gold;
+            border-radius: 50%;
+        }
+
+        .obstacle {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: #D2691E;
+            border-radius: 5px;
+        }
+
+        .message {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            color: #FF4500;
+        }
+
+        .party {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: purple;
+            border-radius: 50%;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background-color: yellow;
+            border-radius: 50%;
+            animation: confetti 1s infinite;
+        }
+
+        @keyframes confetti {
+            0% {
+                transform: translateY(0) translateX(0);
+            }
+            100% {
+                transform: translateY(300px) translateX(200px);
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="gameArea">
+        <div class="sonic" id="sonic"></div>
+        <div class="message" id="message">Fabians Geburtstagsspiel!</div>
+        <div class="party" id="party"></div>
+    </div>
+
+    <script>
+        let sonic = document.getElementById("sonic");
+        let gameArea = document.getElementById("gameArea");
+        let message = document.getElementById("message");
+        let party = document.getElementById("party");
+
+        let sonicPosition = { x: 50, y: 300, velocityY: 0 };
+        let isJumping = false;
+        let score = 0;
+        let gravity = 0.5;
+        let jumpPower = -10;
+
+        function createGift() {
+            let gift = document.createElement("div");
+            gift.classList.add("gift");
+            gift.style.top = Math.random() * 350 + "px";
+            gift.style.left = Math.random() * 550 + "px";
+            gameArea.appendChild(gift);
+            return gift;
+        }
+
+        function createObstacle() {
+            let obstacle = document.createElement("div");
+            obstacle.classList.add("obstacle");
+            obstacle.style.top = Math.random() * 350 + "px";
+            obstacle.style.left = Math.random() * 550 + "px";
+            gameArea.appendChild(obstacle);
+            return obstacle;
+        }
+
+        function createConfetti() {
+            let confetti = document.createElement("div");
+            confetti.classList.add("confetti");
+            confetti.style.top = Math.random() * 100 + "px";
+            confetti.style.left = Math.random() * 100 + "px";
+            gameArea.appendChild(confetti);
+        }
+
+        function moveSonic(event) {
+            if (event.key === "ArrowRight") {
+                sonicPosition.x += 10;
+            } else if (event.key === "ArrowLeft") {
+                sonicPosition.x -= 10;
+            } else if (event.key === "ArrowUp" && !isJumping) {
+                isJumping = true;
+                sonicPosition.velocityY = jumpPower;
+            } else if (event.key === "p") {
+                transformToParty();
+            }
+
+            if (sonicPosition.x < 0) sonicPosition.x = 0;
+            if (sonicPosition.x > 550) sonicPosition.x = 550;
+
+            sonicPosition.y += sonicPosition.velocityY;
+            if (sonicPosition.y > 300) {
+                sonicPosition.y = 300;
+                isJumping = false;
+            }
+            sonicPosition.velocityY += gravity;
+
+            sonic.style.left = sonicPosition.x + "px";
+            sonic.style.top = sonicPosition.y + "px";
+
+            checkForCollision();
+        }
+
+        function checkForCollision() {
+            let gifts = document.querySelectorAll(".gift");
+            let obstacles = document.querySelectorAll(".obstacle");
+            gifts.forEach(gift => {
+                let giftRect = gift.getBoundingClientRect();
+                let sonicRect = sonic.getBoundingClientRect();
+
+                if (
+                    sonicRect.left < giftRect.right &&
+                    sonicRect.right > giftRect.left &&
+                    sonicRect.top < giftRect.bottom &&
+                    sonicRect.bottom > giftRect.top
+                ) {
+                    gift.remove();
+                    score++;
+                    message.innerHTML = `Fabians Geburtstagsspiel! Score: ${score}`;
+                    createGift();
+                }
+            });
+
+            obstacles.forEach(obstacle => {
+                let obstacleRect = obstacle.getBoundingClientRect();
+                let sonicRect = sonic.getBoundingClientRect();
+
+                if (
+                    sonicRect.left < obstacleRect.right &&
+                    sonicRect.right > obstacleRect.left &&
+                    sonicRect.top < obstacleRect.bottom &&
+                    sonicRect.bottom > obstacleRect.top
+                ) {
+                    gameOver();
+                }
+            });
+        }
+
+        function gameOver() {
+            message.innerHTML = `Game Over! Dein Score: ${score}`;
+            sonic.style.display = 'none';
+            clearInterval(obstacleInterval);
+        }
+
+        function transformToParty() {
+            party.style.display = "block";
+            setTimeout(() => {
+                party.style.display = "none";
+                createConfetti();
+            }, 1000);
+        }
+
+        window.addEventListener("keydown", moveSonic);
+
+        let giftInterval = setInterval(createGift, 2000);
+        let obstacleInterval = setInterval(createObstacle, 3000);
+
+    </script>
+</body>
+</html>
